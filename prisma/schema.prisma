@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  brands       Brand[]
+  routers      Router[]
+
+  @@map("users")
+}
+
+model Brand {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routers   Router[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, userId])
+  @@index([userId])
+  @@map("brands")
+}
+
+model Router {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mac          String        // Normalized uppercase 12 hex chars or formatted
+  brandId      String
+  brand        Brand         @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  model        String?
+  serial       String?
+  locationName String
+  landmark     String?
+  status       String        @default("Active") // "Active" | "Inactive" | "Faulty"
+  notes        String?       @db.Text
+  photos       RouterPhoto[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([userId, mac])
+  @@index([userId, locationName])
+  @@index([userId, status])
+  @@index([userId, brandId])
+  @@map("routers")
+}
+
+model RouterPhoto {
+  id        String   @id @default(cuid())
+  routerId  String
+  router    Router   @relation(fields: [routerId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+
+  @@index([routerId])
+  @@map("router_photos")
+}
